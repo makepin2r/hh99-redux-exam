@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import styled from "styled-components";
-import { useDispatch } from "react-redux";
+import { useDispatch } from "react-redux"; // !1 리듀서 사용을 위한 useDispatch() 추가
 import nextId from "react-id-generator";
 import { addTodo } from "../../../redux/modules/todos.js";
 
 const Form = () => {
+  const dispatch = useDispatch(); // !1 리듀서 사용을 위한 useDispatch() 추가
   const id = nextId();
   
   const [todo, setTodo] = useState({
-    id: 0,
+    id: id,
     title: "",
     body: "",
     isDone: false,
@@ -22,13 +23,14 @@ const Form = () => {
   const onSubmitHandler = (event) => {
     event.preventDefault();
     if (todo.title.trim() === "" || todo.body.trim() === "") return;
-    
     setTodo({
-      id: 0,
+      id: id,
       title: "",
       body: "",
       isDone: false,
     });
+    // ! store에 추가하는 코드가 없음 ADD_TODO
+    dispatch(addTodo(todo));
   };
 
   return (

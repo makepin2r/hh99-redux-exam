@@ -60,7 +60,9 @@ const todos = (state = initialState, action) => {
     case ADD_TODO:
       return {
         ...state,
-        todos: [action.payload],
+        // * todos: [action.payload]
+        // * 기존의 todos를 포함하여 새로운 배열을 만들어주어야 함.
+        todos: [...state.todos, action.payload]
       };
 
     case TOGGLE_STATUS_TODO:
@@ -77,6 +79,12 @@ const todos = (state = initialState, action) => {
           }
         }),
       };
+
+    case DELETE_TODO:
+      return {
+        ...state,
+        todos: state.todos.filter((todo) => todo. id !== action.payload)
+      }
 
     case GET_TODO_BY_ID:
       return {

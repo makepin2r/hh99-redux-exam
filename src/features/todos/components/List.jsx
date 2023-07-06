@@ -1,7 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import { useDispatch, useSelector } from "react-redux";
-import { deleteTodo, toggleStatusTodo } from "../../../redux/modules/todos.js";
+import { deleteTodo, getTodoByID, toggleStatusTodo } from "../../../redux/modules/todos.js";
 import { Link } from "react-router-dom";
 
 const List = () => {
@@ -24,7 +24,9 @@ const List = () => {
           if (!todo.isDone) {
             return (
               <StTodoContainer key={todo.id}>
-                <StLink to={`/${todo.id}`} key={todo.id}>
+                <StLink to={`/${todo.id}`} key={todo.id} onClick={()=>{
+                  dispatch(getTodoByID(todo.id))
+                }}>
                   <div>상세보기</div>
                 </StLink>
                 <div>
@@ -54,11 +56,11 @@ const List = () => {
       </StListWrapper>
       <h2 className="list-title">Done..! 🎉</h2>
       <StListWrapper>
-        {todos.map((todo, index) => {
+        {todos.map((todo) => {
           if (todo.isDone) {
             return (
               <StTodoContainer key={todo.id}>
-                <StLink to={`/${index}`} key={todo.id}>
+                <StLink to={`/${todo.id}`} key={todo.id} onClick={() => {dispatch(getTodoByID(todo.id))}}>
                   <div>상세보기</div>
                 </StLink>
                 <div>
@@ -74,7 +76,7 @@ const List = () => {
                   </StButton>
                   <StButton
                     borderColor="green"
-                    onClick={onToggleStatusTodo}
+                    onClick={()=>{onToggleStatusTodo(todo.id)}}
                   >
                     {todo.isDone ? "취소!" : "완료!"}
                   </StButton>

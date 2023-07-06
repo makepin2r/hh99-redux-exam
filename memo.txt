@@ -1,0 +1,135 @@
+1. 추가하기 버튼을 클릭해도 추가한 아이템이 화면에 표시되지 않음. 
+에러 이유 : Form 컴포넌트에 데이터를 리덕스 store에 추가하는 코드가 누락되어있습니다.
+문제 해결 : Form 컴포넌트에 리듀서를 호출하는 코드를 추가합니다.
+1. 해당 컴포넌트에 useDispatch() 사용을 위한 코드를 추가합니다.
+import { useDispatch } from "react-redux"; // useDispatch() import
+const dispatch = useDispatch(); //  컴포넌트 함수 내에서 리듀서 사용을 위한 useDispatch() 가져오기
+2. 추가하기 버튼 클릭시 form 요소를 통해 동작하는 onSubmitHandler 함수 내에서 dispatch를 실행합니다.
+const onSubmitHandler = (event) => {
+    event.preventDefault();
+    if (todo.title.trim() === "" || todo.body.trim() === "") return;
+    setTodo({
+      id: 0,
+      title: "",
+      body: "",
+      isDone: false,
+    });
+    //  누락되었던 dispatch 함수 추가
+    dispatch(addTodo(todo));
+  };
+
+2. 추가하기 버튼 클릭 후 기존에 존재하던 아이템들이 사라짐.  
+에러 이유 : 리듀서 함수의 ADD_TODO 로직에서 리턴하는 객체 내의 todos 배열 state이 새롭게 들어오는 값만 포함한 배열로 정의되어있음.
+문제 해결 : 스프레드 연산자를 통해 기존 데이터 + 새로운 값을 모두 포함하는 새로운 배열을 정의
+// src/redux/modules/todos.js
+const todos = (state = initialState, action) => {
+  switch (action.type) {
+    case ADD_TODO:
+      return {
+        ...state,
+        // 기존의 todos를 포함하여 새로운 배열을 만들어주어야 함.
+        // todos: [action.payload]
+        todos: [...state.todos, action.payload]
+      };
+    // ... 이하 생략
+    
+3. 삭제 기능이 동작하지 않음. 
+에러 이유 : 리듀서 함수에 삭제하는 로직 누락
+문제 해결 : List 컴포넌트에서 삭제 버튼 클릭시 id값을 payload로 전달하는 deleteTodo() 액션 크리에이터가 동작하게끔 되어있음. deleteTodo()는 DELETE_TODO 타입으로 id값을 전달함. 이에 맞게 리듀서에도 해당 타입에 대한 로직 추가가 필요.
+const todos = (state = initialState, action) => {
+    switch (action.type) {
+        // 새롭게 추가한 삭제 로직
+        case DELETE_TODO:
+            return {
+                ...state,
+                todos: state.todos.filter((todo) => todo. id !== action.payload) // 전달된 값과 id가 일치하지 않는 데이터들만 모아 저장
+            }
+4. 상세 페이지에 진입 하였을 때 데이터가 업데이트 되지 않음.
+에러 이유 :
+1. Detail에 출력되는 데이터는 todo state인데, List 컴포넌트의 Link에서 해당 링크로 이동할 때 todo가 선택한 id의 데이터로 업데이트 되는 로직이 없음
+2. Form 컴포넌트에서 새로운 todo를 state에 주입할 때 id가 0으로 고정되어있음. (에러 발생)
+문제 해결 : 
+1. List 컴포넌트의 Link에 이벤트 함수로 getTodoByID() 리듀서 호출
+{/*<StLink to={`/${todo.id}`} key={todo.id}>
+                  <div>상세보기</div>
+                </StLink>*/}
+<StLink to={`/${todo.id}`} key={todo.id} onClick={()=>{
+                  dispatch(getTodoByID(todo.id))
+                }}>
+                  <div>상세보기</div>
+                </StLink>
+2. Form 컴포넌트에서 import되어있는 react-id-generator 패키지를 활용하여 각 데이터마다 고유한 id 생성
+const Form = () => {
+  const id = nextId();
+  const [todo, setTodo] = useState({
+    // nextId()로 생성된 고유한 값을 id에 삽입
+    //id: 0,
+    //id: id,
+    title: "",
+    body: "",
+    isDone: false,
+  });
+  
+  const onChangeHandler = (event) => {
+    const { name, value } = event.target;
+    setTodo({ ...todo, [name]: value });
+  };
+
+  const onSubmitHandler = (event) => {
+    event.preventDefault();
+    if (todo.title.trim() === "" || todo.body.trim() === "") return;
+    setTodo({
+        // nextId()로 생성된 고유한 값을 id에 삽입
+    //id: 0,
+      id: id,
+      title: "",
+      body: "",
+      isDone: false,
+    });
+    // ! store에 추가하는 코드가 없음 ADD_TODO
+    dispatch(addTodo(todo));
+  };
+5. 완료된 카드의 상세 페이지에 진입 하였을 때 올바른 데이터를 불러오지 못함. 
+에러 이유 : 완료 카드의 상세보기 Link가 id가 아닌 해당 데이터의 인덱스로 연결되어있음.
+문제 해결 : 완료 카드의 상세보기 Link 경로를 todo.id로 수정
+{todos.map((todo, index) => {
+          if (todo.isDone) {
+            return (
+              <StTodoContainer key={todo.id}>
+                <StLink to={`/${index}`} key={todo.id}>
+                  <div>상세보기</div>
+                </StLink>
+6. 취소 버튼 클릭시 기능이 작동하지 않음.
+에러 이유 : List 컴포넌트에서 완료된 데이터 엘리먼트의 토글 버튼에 연결된 onToggleStatusTodo 함수에 인자값 누락
+문제 해결 : 해당 버튼의 onClick에 연결된 onToggleStatusTodo 함수에 인자값으로 todo.id 추가
+<h2 className="list-title">Done..! 🎉</h2>
+      <StListWrapper>
+        {todos.map((todo, index) => {
+          if (todo.isDone) {
+            return (
+              <StTodoContainer key={todo.id}>
+                <StLink to={`/${index}`} key={todo.id}>
+                  <div>상세보기</div>
+                </StLink>
+                <div>
+                  <h2 className="todo-title">{todo.title}</h2>
+                  <div>{todo.body}</div>
+                </div>
+                <StDialogFooter>
+                  <StButton
+                    borderColor="red"
+                    onClick={() => onDeleteTodo(todo.id)}
+                  >
+                    삭제하기
+                  </StButton>
+                  <StButton
+                    borderColor="green"
+                    // 인자값 전달 필요
+                    // onClick={onToggleStatusTodo}
+                    onClick={()=>{onToggleStatusTodo(todo.id)}}
+                  >
+                    {todo.isDone ? "취소!" : "완료!"}
+                  </StButton>
+                </StDialogFooter>
+              </StTodoContainer>
+7. 선택) 과제를 마쳤다면 배포도 한번 해볼까요?
